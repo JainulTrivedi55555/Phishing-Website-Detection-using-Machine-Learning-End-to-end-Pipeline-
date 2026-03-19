@@ -1,0 +1,45 @@
+# ── Secrets ──────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Python ───────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ── ML Artifacts (large, auto-generated) ─────
+Artifacts/
+logs/
+saved_models/
+mlruns/
+
+# ── Model files (tracked in final_model/ only)
+# Uncomment the line below if you want to exclude model pkl files from git
+# *.pkl
+
+# ── Notebooks & temp ─────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+temp_*.csv
+
+# ── Virtual environments ──────────────────────
+venv/
+env/
+.venv/
+
+# ── IDE ───────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── OS ───────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -1,0 +1,92 @@
+name: PhishGuard ML — CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    name: Lint & Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Check package imports
+        run: |
+          python -c "from networksecurity.exception.exception import NetworkSecurityException; print('Exception module OK')"
+          python -c "from networksecurity.logging.logger import logging; print('Logger module OK')"
+          python -c "from networksecurity.utils.main_utils.utils import load_object; print('Utils module OK')"
+
+      - name: Verify model artifacts exist
+        run: |
+          python -c "
+          import os
+          assert os.path.exists('final_model/model.pkl'), 'model.pkl not found'
+          assert os.path.exists('final_model/preprocessor.pkl'), 'preprocessor.pkl not found'
+          print('Model artifacts present — OK')
+          "
+
+      - name: Smoke test prediction pipeline
+        run: |
+          python -c "
+          import pickle, pandas as pd, numpy as np, warnings
+          warnings.filterwarnings('ignore')
+
+          with open('final_model/model.pkl', 'rb') as f:
+              model = pickle.load(f)
+          with open('final_model/preprocessor.pkl', 'rb') as f:
+              preprocessor = pickle.load(f)
+
+          # One legitimate-looking sample (all 30 features, values in {-1, 0, 1})
+          sample = pd.DataFrame([[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1]], columns=[
+              'having_IP_Address','URL_Length','Shortining_Service','having_At_Symbol',
+              'double_slash_redirecting','Prefix_Suffix','having_Sub_Domain','SSLfinal_State',
+              'Domain_registeration_length','Favicon','port','HTTPS_token','Request_URL',
+              'URL_of_Anchor','Links_in_tags','SFH','Submitting_to_email','Abnormal_URL',
+              'Redirect','on_mouseover','RightClick','popUpWidnow','Iframe','age_of_domain',
+              'DNSRecord','web_traffic','Page_Rank','Google_Index','Links_pointing_to_page',
+              'Statistical_report'
+          ])
+
+          transformed = preprocessor.transform(sample)
+          prediction = model.predict(transformed)
+          print(f'Smoke test prediction: {prediction[0]} — pipeline OK')
+          "
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t phishguard-ml:test .
+
+      - name: Confirm image built
+        run: docker image inspect phishguard-ml:test --format "Image built successfully — size: {{.Size}} bytes"
