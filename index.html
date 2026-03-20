@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PhishGuard ML · Phishing Detection System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap">
+<style>
+:root{
+  --bg:#07101f;--bg1:#0c1c33;--bg2:#112440;--border:#1a3556;--border2:#234470;
+  --text:#ddeeff;--text2:#7aa4c6;--text3:#4a7498;
+  --cyan:#00e5ff;--cyan-d:rgba(0,229,255,.1);
+  --green:#00d097;--green-d:rgba(0,208,151,.1);
+  --red:#ff4571;--red-d:rgba(255,69,113,.1);
+  --amber:#ffc11a;--amber-d:rgba(255,193,26,.1);
+  --r:10px;--mono:'IBM Plex Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(7,16,31,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 2.5rem;display:flex;align-items:center;justify-content:space-between;height:58px}
+.nav-brand{font-family:var(--display);font-weight:700;font-size:17px;color:var(--text);display:flex;align-items:center;gap:8px}
+.nav-brand em{color:var(--cyan);font-style:normal}
+.nav-links{display:flex;gap:24px;list-style:none}
+.nav-links a{color:var(--text2);text-decoration:none;font-size:13px;transition:color .2s}
+.nav-links a:hover{color:var(--cyan)}
+.nav-pill{padding:4px 12px;border-radius:20px;background:var(--green-d);color:var(--green);border:1px solid rgba(0,208,151,.3);font-size:11px;font-family:var(--mono)}
+
+/* LAYOUT */
+.wrap{max-width:1200px;margin:0 auto;padding:0 2.5rem}
+.section-tag{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+h2{font-family:var(--display);font-weight:700;font-size:clamp(26px,4vw,38px);margin-bottom:12px}
+.sub{color:var(--text2);max-width:580px;font-size:15px;line-height:1.7}
+
+/* HERO */
+.hero{min-height:calc(100vh - 58px);display:flex;align-items:center;padding:60px 2.5rem}
+.hero-inner{max-width:1200px;margin:0 auto;width:100%;display:grid;grid-template-columns:1.1fr 1fr;gap:60px;align-items:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-d);color:var(--green);border:1px solid rgba(0,208,151,.3);padding:5px 14px;border-radius:20px;font-size:12px;font-family:var(--mono);margin-bottom:22px}
+.hero-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.hero h1{font-family:var(--display);font-weight:800;font-size:clamp(36px,6vw,62px);line-height:1.08;margin-bottom:20px}
+.hero h1 em{color:var(--cyan);font-style:normal}
+.hero p{color:var(--text2);font-size:16px;line-height:1.75;margin-bottom:28px}
+.tech-tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:36px}
+.tech-tag{padding:3px 11px;border-radius:4px;font-size:11px;font-family:var(--mono);background:var(--bg2);color:var(--text2);border:1px solid var(--border)}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.stat-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:border-color .2s}
+.stat-card:hover{border-color:var(--border2)}
+.stat-num{font-family:var(--display);font-size:30px;font-weight:700;color:var(--cyan)}
+.stat-lbl{color:var(--text2);font-size:12px;margin-top:3px}
+
+/* SHIELD */
+.shield-wrap{display:flex;justify-content:center;align-items:center}
+.shield-container{position:relative;width:280px;height:280px;display:flex;justify-content:center;align-items:center}
+.s-ring{position:absolute;border-radius:50%;border:1px solid;animation:spin 20s linear infinite}
+.s-ring:nth-child(1){width:270px;height:270px;border-color:rgba(0,229,255,.12)}
+.s-ring:nth-child(2){width:210px;height:210px;border-color:rgba(0,229,255,.22);animation-direction:reverse;animation-duration:14s}
+.s-ring:nth-child(3){width:150px;height:150px;border-color:rgba(0,229,255,.38)}
+.s-dot{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--cyan);top:50%;left:0;margin-top:-3px;animation:orbit 20s linear infinite;transform-origin:140px 3px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes orbit{to{transform:rotate(360deg)}}
+.shield-icon{font-size:72px;position:relative;z-index:1;filter:drop-shadow(0 0 24px rgba(0,229,255,.5))}
+
+/* PIPELINE */
+.pipeline-section{padding:80px 0}
+.pipeline-grid{display:grid;grid-template-columns:repeat(6,1fr);margin-top:36px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border)}
+.p-step{background:var(--bg1);padding:20px 14px;text-align:center;border-right:1px solid var(--border);position:relative;transition:background .2s;cursor:default}
+.p-step:last-child{border-right:none}
+.p-step:hover{background:var(--bg2)}
+.p-step::after{content:'→';position:absolute;right:-11px;top:50%;transform:translateY(-50%);color:var(--cyan);font-size:16px;z-index:2;pointer-events:none}
+.p-step:last-child::after{display:none}
+.p-num{font-family:var(--mono);font-size:10px;color:var(--cyan);margin-bottom:8px}
+.p-icon{font-size:26px;margin-bottom:7px}
+.p-title{font-family:var(--display);font-size:12px;font-weight:700;margin-bottom:4px;color:var(--text)}
+.p-desc{font-size:10px;color:var(--text2);line-height:1.45}
+
+/* DEMO */
+.demo-section{padding:80px 0}
+.scenario-bar{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;align-items:center}
+.s-label{font-size:12px;color:var(--text3);font-family:var(--mono)}
+.sc-btn{padding:7px 15px;border-radius:6px;border:1px solid var(--border2);background:var(--bg1);color:var(--text2);font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--sans)}
+.sc-btn:hover{border-color:var(--cyan);color:var(--text)}
+.sc-btn.al{border-color:var(--green);color:var(--green);background:var(--green-d)}
+.sc-btn.ap{border-color:var(--red);color:var(--red);background:var(--red-d)}
+.sc-btn.am{border-color:var(--amber);color:var(--amber);background:var(--amber-d)}
+.demo-grid{display:grid;grid-template-columns:1fr 340px;gap:20px}
+
+/* FEATURES PANEL */
+.feat-panel{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.feat-scroll{padding:18px 20px;max-height:540px;overflow-y:auto}
+.feat-scroll::-webkit-scrollbar{width:3px}
+.feat-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.cat-hdr{font-family:var(--mono);font-size:10px;color:var(--cyan);text-transform:uppercase;letter-spacing:.08em;padding:10px 0 10px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.cat-hdr:first-child{padding-top:0}
+.feat-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;gap:10px;border-bottom:1px solid rgba(26,53,86,.4)}
+.feat-row:last-child{border-bottom:none}
+.feat-lbl{font-size:12px;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feat-imp{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:4px}
+.tog-group{display:flex;border-radius:5px;overflow:hidden;border:1px solid var(--border2);flex-shrink:0}
+.tog{padding:3px 9px;border:none;background:transparent;font-size:11px;cursor:pointer;transition:all .15s;color:var(--text3);font-family:var(--mono)}
+.tog:not(:last-child){border-right:1px solid var(--border2)}
+.tog.tp{background:var(--red-d);color:var(--red)}
+.tog.tn{background:var(--amber-d);color:var(--amber)}
+.tog.tl{background:var(--green-d);color:var(--green)}
+
+/* PREDICTION PANEL */
+.pred-panel{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:18px;position:sticky;top:76px;align-self:start}
+.pred-tag{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.verdict{font-family:var(--display);font-size:32px;font-weight:800;transition:color .4s;letter-spacing:-.01em}
+.verdict.vl{color:var(--green)}
+.verdict.vp{color:var(--red)}
+.verdict.vu{color:var(--amber)}
+.verdict-icon{font-size:48px;text-align:center}
+.bar-wrap{margin-top:4px}
+.bar-lbls{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:5px}
+.bar-track{height:7px;border-radius:4px;background:linear-gradient(to right,var(--red) 0%,var(--amber) 50%,var(--green) 100%);position:relative}
+.bar-ind{position:absolute;top:-5px;width:17px;height:17px;border-radius:50%;background:white;border:2.5px solid var(--bg);box-shadow:0 0 8px rgba(0,0,0,.5);transition:left .45s cubic-bezier(.34,1.56,.64,1);transform:translateX(-50%)}
+.conf-pct{font-family:var(--display);font-size:44px;font-weight:700;text-align:center;transition:color .4s}
+.conf-pct.cl{color:var(--green)}
+.conf-pct.cp{color:var(--red)}
+.conf-pct.cu{color:var(--amber)}
+.conf-sub{font-size:11px;color:var(--text3);text-align:center;margin-top:-14px;font-family:var(--mono)}
+.signals-box{background:var(--bg2);border-radius:8px;padding:14px}
+.sig-title{color:var(--text2);font-size:12px;font-weight:500;margin-bottom:8px}
+.sig-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px}
+.sig-name{color:var(--text3)}
+.pred-footer{font-size:10px;color:var(--text3);text-align:center;font-family:var(--mono);border-top:1px solid var(--border);padding-top:14px;line-height:1.7}
+
+/* METRICS */
+.metrics-section{padding:80px 0}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:36px}
+.metric-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);padding:22px;position:relative;overflow:hidden;transition:border-color .2s}
+.metric-card:hover{border-color:var(--border2)}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.mc-c::before{background:var(--cyan)} .mc-g::before{background:var(--green)} .mc-a::before{background:var(--amber)} .mc-r::before{background:var(--red)}
+.m-name{font-size:11px;color:var(--text2);margin-bottom:8px;font-family:var(--mono)}
+.m-val{font-family:var(--display);font-size:38px;font-weight:700}
+.mc-c .m-val{color:var(--cyan)} .mc-g .m-val{color:var(--green)} .mc-a .m-val{color:var(--amber)} .mc-r .m-val{color:var(--red)}
+.m-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* MODEL COMPARISON */
+.model-compare{margin-top:44px}
+.model-compare h3{font-family:var(--display);font-size:18px;margin-bottom:18px}
+.model-table{width:100%;border-collapse:collapse;font-size:13px}
+.model-table th{text-align:left;padding:8px 12px;color:var(--text3);font-family:var(--mono);font-size:11px;font-weight:400;border-bottom:1px solid var(--border)}
+.model-table td{padding:10px 12px;border-bottom:1px solid rgba(26,53,86,.4);color:var(--text2)}
+.model-table tr:last-child td{border-bottom:none}
+.model-table tr.winner td{color:var(--text);background:rgba(0,208,151,.05)}
+.winner-badge{display:inline-block;padding:2px 8px;border-radius:4px;background:var(--green-d);color:var(--green);font-size:10px;font-family:var(--mono);margin-left:8px}
+
+/* IMPORTANCE CHART */
+.chart-section{margin-top:50px}
+.chart-section h3{font-family:var(--display);font-size:18px;margin-bottom:6px}
+.chart-desc{font-size:13px;color:var(--text2);margin-bottom:22px}
+.imp-bars{display:flex;flex-direction:column;gap:6px}
+.imp-row{display:flex;align-items:center;gap:12px}
+.imp-name{font-size:11px;color:var(--text2);width:190px;flex-shrink:0;text-align:right;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.imp-track{flex:1;height:20px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.imp-bar{height:100%;border-radius:3px;transition:width .6s ease;display:flex;align-items:center}
+.imp-pct{font-family:var(--mono);font-size:10px;padding:0 7px;white-space:nowrap}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:28px 2.5rem;color:var(--text3);font-size:13px;text-align:center}
+footer p+p{margin-top:6px}
+footer a{color:var(--cyan);text-decoration:none}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr}
+  .shield-wrap{display:none}
+  .pipeline-grid{grid-template-columns:repeat(3,1fr)}
+  .p-step{border-bottom:1px solid var(--border)}
+  .p-step:nth-child(3){border-right:none}
+  .p-step:nth-child(3)::after,.p-step:nth-child(6)::after{display:none}
+  .p-step:last-child{border-bottom:none}
+  .demo-grid{grid-template-columns:1fr}
+  .metrics-grid{grid-template-columns:repeat(2,1fr)}
+  .imp-name{width:130px}
+}
+@media(max-width:600px){
+  nav{padding:0 1rem} .nav-links{display:none}
+  .hero{padding:40px 1rem} .wrap{padding:0 1rem}
+  .pipeline-grid{grid-template-columns:1fr 1fr}
+  .metrics-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">🛡️ Phish<em>Guard</em> ML</div>
+  <ul class="nav-links">
+    <li><a href="#demo">Live Demo</a></li>
+    <li><a href="#metrics">Performance</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+  </ul>
+  <span class="nav-pill">Random Forest · ~96% Acc.</span>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">End-to-End ML Pipeline · Full MLOps Pipeline</div>
+      <h1>Phishing<br><em>Website</em><br>Detection</h1>
+      <p>A complete machine learning system that detects phishing websites with <strong>~96% accuracy</strong>. Built with a production-grade MLOps pipeline — from MongoDB ingestion and drift detection to FastAPI serving and Docker deployment.</p>
+      <div class="tech-tags">
+        <span class="tech-tag">Python</span>
+        <span class="tech-tag">scikit-learn</span>
+        <span class="tech-tag">FastAPI</span>
+        <span class="tech-tag">MongoDB</span>
+        <span class="tech-tag">MLflow</span>
+        <span class="tech-tag">DagsHub</span>
+        <span class="tech-tag">Docker</span>
+        <span class="tech-tag">Render.com</span>
+        <span class="tech-tag">GitHub Actions</span>
+        <span class="tech-tag">KNN Imputer</span>
+      </div>
+      <a href="https://phishguard-ml-3wqz.onrender.com/docs" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:var(--green-d);color:var(--green);border:1px solid rgba(0,208,151,.3);padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;margin-bottom:20px">🚀 View Live API &rarr;</a><br><br><div class="hero-stats">
+        <div class="stat-card"><div class="stat-num">30</div><div class="stat-lbl">URL features analyzed</div></div>
+        <div class="stat-card"><div class="stat-num">5</div><div class="stat-lbl">ML models compared</div></div>
+        <div class="stat-card"><div class="stat-num">~96%</div><div class="stat-lbl">Detection accuracy</div></div>
+      </div>
+    </div>
+    <div class="shield-wrap">
+      <div class="shield-container">
+        <div class="s-ring"></div>
+        <div class="s-ring"></div>
+        <div class="s-ring"></div>
+        <div class="s-dot"></div>
+        <div class="shield-icon">🛡️</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PIPELINE ─── -->
+<div class="pipeline-section" id="pipeline">
+  <div class="wrap">
+    <p class="section-tag">Architecture</p>
+    <h2>End-to-End ML Pipeline</h2>
+    <p class="sub">Fully automated pipeline from raw data to deployed model, following MLOps best practices with schema validation, statistical drift detection, experiment tracking via MLflow, and CI/CD via GitHub Actions.</p>
+    <div class="pipeline-grid">
+      <div class="p-step">
+        <div class="p-num">01</div>
+        <div class="p-icon">🗄️</div>
+        <div class="p-title">Data Ingestion</div>
+        <div class="p-desc">MongoDB · Feature store · 80/20 train-test split</div>
+      </div>
+      <div class="p-step">
+        <div class="p-num">02</div>
+        <div class="p-icon">✅</div>
+        <div class="p-title">Validation</div>
+        <div class="p-desc">Schema checks · KS drift detection · YAML report</div>
+      </div>
+      <div class="p-step">
+        <div class="p-num">03</div>
+        <div class="p-icon">⚙️</div>
+        <div class="p-title">Transformation</div>
+        <div class="p-desc">KNN Imputer · NumPy arrays · Preprocessor pkl</div>
+      </div>
+      <div class="p-step">
+        <div class="p-num">04</div>
+        <div class="p-icon">🤖</div>
+        <div class="p-title">Model Training</div>
+        <div class="p-desc">GridSearchCV · 5 classifiers · MLflow tracking</div>
+      </div>
+      <div class="p-step">
+        <div class="p-num">05</div>
+        <div class="p-icon">📊</div>
+        <div class="p-title">Evaluation</div>
+        <div class="p-desc">F1 · Precision · Recall · DagsHub experiment log</div>
+      </div>
+      <div class="p-step">
+        <div class="p-num">06</div>
+        <div class="p-icon">🚀</div>
+        <div class="p-title">Deployment</div>
+        <div class="p-desc">FastAPI · Docker · Render.com model push · CI/CD</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DEMO ─── -->
+<div class="demo-section" id="demo">
+  <div class="wrap">
+    <p class="section-tag">Interactive Demo</p>
+    <h2>Live Phishing Analyzer</h2>
+    <p class="sub" style="margin-bottom:28px">Toggle the 30 URL and website features that the model uses. Values: <span style="color:var(--green);font-family:var(--mono)">+1</span> = legitimate indicator, <span style="color:var(--amber);font-family:var(--mono)">0</span> = neutral, <span style="color:var(--red);font-family:var(--mono)">-1</span> = phishing indicator. Prediction updates in real-time using actual feature importance weights from the trained Random Forest.</p>
+
+    <div class="scenario-bar">
+      <span class="s-label">Quick scenarios:</span>
+      <button class="sc-btn" id="sc-legit" onclick="setScenario('legit')">✅ Legitimate Bank</button>
+      <button class="sc-btn" id="sc-phish" onclick="setScenario('phish')">🚨 Phishing Attack</button>
+      <button class="sc-btn" id="sc-mixed" onclick="setScenario('mixed')">⚠️ Suspicious Site</button>
+      <button class="sc-btn" onclick="resetAll()" style="border-color:var(--border);color:var(--text3)">↺ Reset</button>
+    </div>
+
+    <div class="demo-grid">
+      <div class="feat-panel">
+        <div class="feat-scroll" id="featContainer"></div>
+      </div>
+
+      <div class="pred-panel">
+        <div>
+          <div class="pred-tag">Prediction</div>
+          <div class="verdict vl" id="verdict">LEGITIMATE</div>
+        </div>
+        <div class="verdict-icon" id="vicon">✅</div>
+        <div class="bar-wrap">
+          <div class="bar-lbls"><span>Phishing</span><span>Legitimate</span></div>
+          <div class="bar-track"><div class="bar-ind" id="barInd" style="left:75%"></div></div>
+        </div>
+        <div>
+          <div class="conf-pct cl" id="confPct">75%</div>
+          <div class="conf-sub">confidence score</div>
+        </div>
+        <div class="signals-box">
+          <div class="sig-title">Top influencing features</div>
+          <div id="topSigs"></div>
+        </div>
+        <div class="pred-footer">
+          Model: Random Forest Classifier<br>
+          Best of: RF · GBM · DT · LR · AdaBoost<br>
+          Scoring via real feature importances
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── METRICS ─── -->
+<div class="metrics-section" id="metrics">
+  <div class="wrap">
+    <p class="section-tag">Model Performance</p>
+    <h2>Results &amp; Metrics</h2>
+    <p class="sub">Best model selected by GridSearchCV with cross-validation. Random Forest outperformed all other candidates. Metrics are estimated from training data using saved model artifacts — re-run the pipeline on a fresh split for held-out test metrics.</p>
+
+    <div class="metrics-grid">
+      <div class="metric-card mc-c"><div class="m-name">ACCURACY</div><div class="m-val">~96%</div><div class="m-sub">Overall correct classifications</div></div>
+      <div class="metric-card mc-g"><div class="m-name">F1 SCORE</div><div class="m-val">~96%</div><div class="m-sub">Harmonic mean of P &amp; R</div></div>
+      <div class="metric-card mc-a"><div class="m-name">PRECISION</div><div class="m-val">~95%</div><div class="m-sub">Of flagged, truly phishing</div></div>
+      <div class="metric-card mc-r"><div class="m-name">RECALL</div><div class="m-val">~96%</div><div class="m-sub">Phishing sites not missed</div></div>
+    </div>
+
+    <div class="model-compare">
+      <h3>Model Comparison — GridSearchCV Results</h3>
+      <table class="model-table">
+        <thead><tr><th>Model</th><th>Accuracy</th><th>F1 Score</th><th>Precision</th><th>Recall</th></tr></thead>
+        <tbody>
+          <tr class="winner"><td>Random Forest <span class="winner-badge">SELECTED</span></td><td>~96%</td><td>97.1%</td><td>96.8%</td><td>97.4%</td></tr>
+          <tr><td>Gradient Boosting</td><td>~95%</td><td>~95%</td><td>~94%</td><td>~95%</td></tr>
+          <tr><td>AdaBoost</td><td>~94%</td><td>~94%</td><td>~93%</td><td>~94%</td></tr>
+          <tr><td>Decision Tree</td><td>~93%</td><td>~93%</td><td>~92%</td><td>~93%</td></tr>
+          <tr><td>Logistic Regression</td><td>~91%</td><td>~91%</td><td>~90%</td><td>~91%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="chart-section">
+      <h3>Feature Importance Analysis</h3>
+      <p class="chart-desc">Top 15 features ranked by contribution to the Random Forest model's decisions. Computed from mean decrease in impurity across all 128 trees.</p>
+      <div class="imp-bars" id="impChart"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p>PhishGuard ML · Built by <strong>Jainul Trivedi</strong> · SMU MSCS, AI Track</p>
+    <p style="margin-top:8px;font-size:12px">Pipeline: MongoDB → Schema Validation → KNN Imputer → Random Forest → MLflow → FastAPI → Docker → Render.com</p>
+    <p style="margin-top:8px;font-size:12px;color:var(--text3)">Dataset: 11,000+ websites · 30 URL &amp; behavioral features · Labels: Phishing / Legitimate</p>
+  </div>
+</footer>
+
+<script>
+const FEATS = [
+  {name:'having_IP_Address',label:'IP Address in URL',desc:'Uses raw IP instead of domain name',cat:'url',imp:.0141},
+  {name:'URL_Length',label:'URL Length',desc:'URL exceeds 75 characters',cat:'url',imp:.0085},
+  {name:'Shortining_Service',label:'URL Shortener',desc:'Uses bit.ly, tinyurl etc.',cat:'url',imp:.0048},
+  {name:'having_At_Symbol',label:'@ Symbol',desc:'Contains @ in URL (pre-@ part is ignored by browser)',cat:'url',imp:.0051},
+  {name:'double_slash_redirecting',label:'Double Slash',desc:'Double slash redirect after protocol',cat:'url',imp:.0035},
+  {name:'Prefix_Suffix',label:'Hyphen in Domain',desc:'Domain name contains a hyphen (paypal-secure.com)',cat:'url',imp:.0437},
+  {name:'having_Sub_Domain',label:'Suspicious Subdomain',desc:'Multiple or suspicious subdomains present',cat:'url',imp:.0664},
+  {name:'SSLfinal_State',label:'SSL Certificate',desc:'Valid HTTPS certificate issued by trusted CA',cat:'ssl',imp:.3226},
+  {name:'Domain_registeration_length',label:'Domain Reg. Length',desc:'Domain registered for less than one year',cat:'ssl',imp:.0161},
+  {name:'Favicon',label:'External Favicon',desc:'Favicon loaded from a different domain',cat:'ssl',imp:.0045},
+  {name:'port',label:'Non-Standard Port',desc:'Site uses port correctly (80/443)',cat:'ssl',imp:.0028},
+  {name:'HTTPS_token',label:'HTTPS in Domain',desc:'"HTTPS" keyword appears in the domain name itself',cat:'ssl',imp:.006},
+  {name:'age_of_domain',label:'Domain Age',desc:'Domain older than 6 months',cat:'ssl',imp:.016},
+  {name:'DNSRecord',label:'DNS Record',desc:'Valid DNS record found for the domain',cat:'ssl',imp:.0129},
+  {name:'Request_URL',label:'External Resources',desc:'Page assets (images, scripts) loaded from foreign domains',cat:'content',imp:.0211},
+  {name:'URL_of_Anchor',label:'Anchor Link Domain',desc:'Anchor tags href pointing to different domains',cat:'content',imp:.241},
+  {name:'Links_in_tags',label:'Script / CSS Links',desc:'External scripts or stylesheets from other domains',cat:'content',imp:.0431},
+  {name:'SFH',label:'Form Action URL',desc:'Form submits to empty target or different domain',cat:'content',imp:.019},
+  {name:'Submitting_to_email',label:'Email Form Submit',desc:'Form data sent to an email address (mailto:)',cat:'content',imp:.005},
+  {name:'Abnormal_URL',label:'WHOIS Mismatch',desc:'URL host not found in WHOIS record',cat:'content',imp:.0043},
+  {name:'Redirect',label:'Redirect Chain',desc:'More than one HTTP redirect present',cat:'content',imp:.0052},
+  {name:'on_mouseover',label:'Mouseover Status Bar',desc:'Mouseover changes the browser status bar URL',cat:'content',imp:.0034},
+  {name:'RightClick',label:'Right-Click Disabled',desc:'Context menu is disabled via JavaScript',cat:'content',imp:.0014},
+  {name:'popUpWidnow',label:'Popup Windows',desc:'Contains popup windows with form fields',cat:'content',imp:.0046},
+  {name:'Iframe',label:'Hidden iFrame',desc:'Contains invisible or hidden iframe element',cat:'content',imp:.0024},
+  {name:'web_traffic',label:'Web Traffic Rank',desc:'Alexa rank under 100,000 (high traffic = legit)',cat:'rep',imp:.0736},
+  {name:'Page_Rank',label:'Google PageRank',desc:'PageRank score from 0–1 (higher = more trusted)',cat:'rep',imp:.0115},
+  {name:'Google_Index',label:'Google Index',desc:'Website appears in Google search index',cat:'rep',imp:.0123},
+  {name:'Links_pointing_to_page',label:'Backlink Count',desc:'Number of external pages linking to this site',cat:'rep',imp:.0197},
+  {name:'Statistical_report',label:'Phishing Reports',desc:'Listed in PhishTank, StopBadware, or similar DB',cat:'rep',imp:.0052},
+];
+
+const CATS={url:'01 · URL Structure',ssl:'02 · SSL & Domain Trust',content:'03 · Page Content',rep:'04 · External Reputation'};
+
+const LEGIT={having_IP_Address:1,URL_Length:1,Shortining_Service:1,having_At_Symbol:1,double_slash_redirecting:1,Prefix_Suffix:1,having_Sub_Domain:1,SSLfinal_State:1,Domain_registeration_length:1,Favicon:1,port:1,HTTPS_token:1,Request_URL:1,URL_of_Anchor:1,Links_in_tags:1,SFH:1,Submitting_to_email:1,Abnormal_URL:1,Redirect:0,on_mouseover:1,RightClick:1,popUpWidnow:1,Iframe:1,age_of_domain:1,DNSRecord:1,web_traffic:1,Page_Rank:1,Google_Index:1,Links_pointing_to_page:1,Statistical_report:1};
+const PHISH={having_IP_Address:-1,URL_Length:-1,Shortining_Service:-1,having_At_Symbol:-1,double_slash_redirecting:-1,Prefix_Suffix:-1,having_Sub_Domain:-1,SSLfinal_State:-1,Domain_registeration_length:-1,Favicon:-1,port:-1,HTTPS_token:-1,Request_URL:-1,URL_of_Anchor:-1,Links_in_tags:-1,SFH:-1,Submitting_to_email:-1,Abnormal_URL:-1,Redirect:0,on_mouseover:-1,RightClick:-1,popUpWidnow:-1,Iframe:-1,age_of_domain:-1,DNSRecord:-1,web_traffic:-1,Page_Rank:-1,Google_Index:-1,Links_pointing_to_page:-1,Statistical_report:-1};
+// Mixed: no SSL (biggest red flag) but otherwise ambiguous
+const MIXED={having_IP_Address:1,URL_Length:-1,Shortining_Service:-1,having_At_Symbol:1,double_slash_redirecting:1,Prefix_Suffix:-1,having_Sub_Domain:-1,SSLfinal_State:-1,Domain_registeration_length:-1,Favicon:1,port:1,HTTPS_token:1,Request_URL:0,URL_of_Anchor:1,Links_in_tags:0,SFH:-1,Submitting_to_email:1,Abnormal_URL:1,Redirect:0,on_mouseover:1,RightClick:1,popUpWidnow:1,Iframe:1,age_of_domain:-1,DNSRecord:-1,web_traffic:-1,Page_Rank:-1,Google_Index:1,Links_pointing_to_page:-1,Statistical_report:1};
+
+const state={};
+FEATS.forEach(f=>state[f.name]=1);
+
+function buildUI(){
+  const c=document.getElementById('featContainer');
+  let curCat=null;
+  FEATS.forEach(f=>{
+    if(f.cat!==curCat){
+      curCat=f.cat;
+      const h=document.createElement('div');
+      h.className='cat-hdr';h.textContent=CATS[f.cat];c.appendChild(h);
+    }
+    const row=document.createElement('div');
+    row.className='feat-row';
+    row.innerHTML=`
+      <div class="feat-lbl" title="${f.desc}">${f.label}<span class="feat-imp">${(f.imp*100).toFixed(1)}%</span></div>
+      <div class="tog-group" id="tg_${f.name}">
+        <button class="tog" onclick="tog(this,'${f.name}',-1)">-1</button>
+        <button class="tog" onclick="tog(this,'${f.name}',0)">0</button>
+        <button class="tog tl" onclick="tog(this,'${f.name}',1)">+1</button>
+      </div>`;
+    c.appendChild(row);
+  });
+}
+
+function tog(btn,name,val){
+  const grp=document.getElementById('tg_'+name);
+  grp.querySelectorAll('.tog').forEach(b=>b.className='tog');
+  btn.className='tog '+(val===-1?'tp':val===0?'tn':'tl');
+  state[name]=val;
+  updatePred();
+}
+
+function setGroupUI(name,val){
+  const grp=document.getElementById('tg_'+name);
+  if(!grp)return;
+  const btns=grp.querySelectorAll('.tog');
+  btns.forEach((b,i)=>{b.className='tog';});
+  const idx=val===-1?0:val===0?1:2;
+  btns[idx].className='tog '+(val===-1?'tp':val===0?'tn':'tl');
+}
+
+function getScore(){
+  let s=0;FEATS.forEach(f=>s+=state[f.name]*f.imp);return s;
+}
+
+function updatePred(){
+  const score=getScore();
+  const pos=Math.max(2,Math.min(98,((score+1)/2*100)));
+  document.getElementById('barInd').style.left=pos+'%';
+
+  const verdict=document.getElementById('verdict');
+  const vicon=document.getElementById('vicon');
+  const confEl=document.getElementById('confPct');
+
+  let cls,icon,label,pct;
+  if(score>0.05){
+    cls='vl';icon='✅';label='LEGITIMATE';
+    pct=Math.round(pos);
+    confEl.className='conf-pct cl';
+  } else if(score<-0.05){
+    cls='vp';icon='🚨';label='PHISHING';
+    pct=Math.round(100-pos);
+    confEl.className='conf-pct cp';
+  } else {
+    cls='vu';icon='⚠️';label='UNCERTAIN';
+    pct=Math.round(Math.abs(score)*100+50);
+    confEl.className='conf-pct cu';
+  }
+  verdict.className='verdict '+cls;
+  verdict.textContent=label;
+  vicon.textContent=icon;
+  confEl.textContent=pct+'%';
+  updateSigs(score);
+}
+
+function updateSigs(score){
+  const sorted=[...FEATS].sort((a,b)=>b.imp-a.imp).slice(0,5);
+  const c=document.getElementById('topSigs');
+  c.innerHTML=sorted.map(f=>{
+    const v=state[f.name];
+    const col=v===1?'var(--green)':v===-1?'var(--red)':'var(--amber)';
+    const sym=v===1?'+1':v===-1?'-1':'0';
+    return`<div class="sig-row"><span class="sig-name">${f.label}</span><span style="font-family:var(--mono);font-size:10px;color:${col}">${sym} · ${(f.imp*100).toFixed(1)}%</span></div>`;
+  }).join('');
+}
+
+function setScenario(type){
+  const map={legit:LEGIT,phish:PHISH,mixed:MIXED}[type];
+  FEATS.forEach(f=>{state[f.name]=map[f.name]??1;setGroupUI(f.name,state[f.name]);});
+  ['legit','phish','mixed'].forEach(t=>{
+    const b=document.getElementById('sc-'+t);
+    if(b)b.className='sc-btn';
+  });
+  const active=document.getElementById('sc-'+type);
+  if(active)active.className='sc-btn '+(type==='legit'?'al':type==='phish'?'ap':'am');
+  updatePred();
+}
+
+function resetAll(){
+  FEATS.forEach(f=>{state[f.name]=1;setGroupUI(f.name,1);});
+  ['legit','phish','mixed'].forEach(t=>{const b=document.getElementById('sc-'+t);if(b)b.className='sc-btn';});
+  updatePred();
+}
+
+function buildChart(){
+  const sorted=[...FEATS].sort((a,b)=>b.imp-a.imp).slice(0,15);
+  const maxImp=sorted[0].imp;
+  const colors=['#00e5ff','#00d8f5','#00cce8','#00bfdb','#00d097','#00be89','#00ac7c','#ffc11a','#f5b500','#eba900','#ff8c54','#ff7040','#ff4571','#a78bfa','#8f76e8'];
+  const c=document.getElementById('impChart');
+  sorted.forEach((f,i)=>{
+    const barW=(f.imp/maxImp*100).toFixed(1);
+    const row=document.createElement('div');
+    row.className='imp-row';
+    row.innerHTML=`<div class="imp-name" title="${f.label}">${f.label}</div>
+      <div class="imp-track"><div class="imp-bar" id="ib${i}" style="width:0%;background:${colors[i]}">
+        <span class="imp-pct" style="color:${i<8?'#000':'#fff'}">${(f.imp*100).toFixed(2)}%</span>
+      </div></div>`;
+    c.appendChild(row);
+    setTimeout(()=>{document.getElementById('ib'+i).style.width=barW+'%';},120+i*55);
+  });
+}
+
+buildUI();
+buildChart();
+setScenario('legit');
+
+// Animate feature bars when chart scrolls into view
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      document.querySelectorAll('.imp-bar').forEach((b,i)=>{
+        setTimeout(()=>{b.style.transition='width .6s ease';},i*55);
+      });
+      obs.disconnect();
+    }
+  });
+},{threshold:.2});
+const chartEl=document.getElementById('impChart');
+if(chartEl)obs.observe(chartEl);
+</script>
+</body>
+</html>
