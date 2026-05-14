@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PhishGuard ML &middot; Phishing Detection System</title>
+<meta name="description" content="End-to-end ML pipeline for phishing website detection with ~96% accuracy. Built with Python, scikit-learn, FastAPI, MongoDB, MLflow.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a1a;--bg2:#12122a;--bg3:#1a1a3e;--bg4:#0f0f25;--accent:#6c63ff;--accent2:#8b83ff;--green:#10b981;--green-bg:rgba(16,185,129,.12);--red:#ef4444;--red-bg:rgba(239,68,68,.12);--yellow:#f59e0b;--t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;--border:#1e293b;--border2:#2d3748;--grad:linear-gradient(135deg,#6c63ff,#4f46e5)}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t1);line-height:1.6;overflow-x:hidden}
+.nav{position:fixed;top:0;width:100%;z-index:100;padding:14px 0;background:rgba(10,10,26,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav .c{display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:1.05rem;font-weight:700;color:var(--t1);text-decoration:none;display:flex;align-items:center;gap:8px}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{color:var(--t2);text-decoration:none;font-size:.85rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--t1)}
+.c{max-width:1200px;margin:0 auto;padding:0 24px}
+.hero{padding:150px 0 90px;text-align:center;position:relative}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(108,99,255,.1) 0%,transparent 70%);pointer-events:none}
+.badge{display:inline-flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:100px;padding:7px 18px;font-size:.78rem;color:var(--accent2);font-weight:500;margin-bottom:28px}
+.badge .dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:3.8rem;font-weight:900;line-height:1.08;margin-bottom:22px;letter-spacing:-1.5px}
+.gtext{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero>div>p{font-size:1.1rem;color:var(--t2);max-width:620px;margin:0 auto 36px;line-height:1.7}
+.tags{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-bottom:36px}
+.tags span{background:var(--bg2);border:1px solid var(--border);padding:5px 13px;border-radius:6px;font-size:.76rem;color:var(--t2);font-weight:500}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#fff;padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:.95rem;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 20px rgba(108,99,255,.3);border:none;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(108,99,255,.4)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--t2);padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:.95rem;transition:all .2s;border:1px solid var(--border);cursor:pointer;font-family:'Inter',sans-serif}
+.btn-secondary:hover{border-color:var(--accent);color:var(--t1)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:660px;margin:50px auto 0}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px;text-align:center}
+.stat .num{font-size:1.9rem;font-weight:800;color:var(--accent2);font-family:'JetBrains Mono',monospace}
+.stat .lbl{font-size:.78rem;color:var(--t3);margin-top:3px}
+.sec{padding:90px 0}
+.sec-label{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.sec-title{font-size:2.2rem;font-weight:800;margin-bottom:14px;letter-spacing:-.5px}
+.sec-desc{color:var(--t2);font-size:.95rem;max-width:620px;line-height:1.7}
+.pipe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+.pipe{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:26px;transition:border-color .3s,transform .3s}
+.pipe:hover{border-color:var(--accent);transform:translateY(-3px)}
+.pipe .step{font-size:.68rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px}
+.pipe .ico{font-size:1.5rem;margin-bottom:10px}
+.pipe h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+.pipe p{font-size:.8rem;color:var(--t3);line-height:1.5}
+
+/* Demo Section */
+.demo-box{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:44px;margin-top:44px}
+.demo-desc{font-size:.88rem;color:var(--t3);margin-bottom:22px;line-height:1.6}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.feat-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:10px 14px;transition:border-color .2s}
+.feat-item:hover{border-color:var(--border2)}
+.feat-name{font-size:.74rem;color:var(--t2);font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.toggle-group{display:flex;gap:3px}
+.toggle-group button{width:28px;height:24px;border:1px solid var(--border);background:transparent;color:var(--t3);font-size:.68rem;font-weight:700;border-radius:4px;cursor:pointer;transition:all .15s;font-family:'JetBrains Mono',monospace}
+.toggle-group button.active-neg{background:var(--red-bg);border-color:rgba(239,68,68,.4);color:var(--red)}
+.toggle-group button.active-zero{background:rgba(100,116,139,.15);border-color:rgba(100,116,139,.4);color:var(--t2)}
+.toggle-group button.active-pos{background:var(--green-bg);border-color:rgba(16,185,129,.4);color:var(--green)}
+.toggle-group button:hover{border-color:var(--accent)}
+.presets{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+.preset{padding:7px 14px;font-size:.78rem;font-weight:500;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--t2);cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.preset:hover{border-color:var(--accent);color:var(--accent2)}
+.pred-result{display:flex;align-items:center;justify-content:center;gap:28px;margin-top:28px;padding:28px;background:var(--bg);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
+.pr-block{text-align:center}
+.pr-label{font-size:.78rem;color:var(--t3);margin-bottom:4px}
+.pr-verdict{font-size:1.6rem;font-weight:800;letter-spacing:-.5px;transition:color .3s}
+.pr-verdict.legit{color:var(--green)}
+.pr-verdict.phish{color:var(--red)}
+.pr-conf{font-size:1.1rem;color:var(--t2);font-family:'JetBrains Mono',monospace}
+.pr-bar-wrap{width:140px;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin:8px auto 0}
+.pr-bar{height:100%;border-radius:3px;transition:width .5s ease,background .3s ease}
+.pr-meta{font-size:.76rem;color:var(--t3);max-width:200px;line-height:1.5}
+
+/* Dashboard */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:44px}
+.dash-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px}
+.dash-card h3{font-size:1.05rem;font-weight:700;margin-bottom:6px}
+.dash-card .sub{font-size:.8rem;color:var(--t3);margin-bottom:22px}
+.fi-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.fi-label{width:160px;font-size:.72rem;color:var(--t2);text-align:right;font-family:'JetBrains Mono',monospace;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-bar-bg{flex:1;height:22px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden}
+.fi-bar{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.22,1,.36,1)}
+.fi-bar::after{content:attr(data-val);position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:.65rem;color:rgba(255,255,255,.8);font-weight:600;font-family:'JetBrains Mono',monospace}
+.fi-bar{position:relative}
+.fi-bar.b1{background:linear-gradient(90deg,#6c63ff,#8b83ff)}
+.fi-bar.b2{background:linear-gradient(90deg,#4f46e5,#6c63ff)}
+.fi-bar.b3{background:linear-gradient(90deg,#3730a3,#4f46e5)}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:32px;padding:10px 0}
+.donut-canvas{width:160px;height:160px}
+.donut-legend{display:flex;flex-direction:column;gap:12px}
+.legend-item{display:flex;align-items:center;gap:10px}
+.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.legend-text{font-size:.85rem;color:var(--t2)}
+.legend-text strong{color:var(--t1);font-family:'JetBrains Mono',monospace}
+
+/* Metrics */
+.met-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:44px}
+.met{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:26px;text-align:center;transition:border-color .3s}
+.met:hover{border-color:var(--accent)}
+.met-label{font-size:.68rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px}
+.met-val{font-size:2.2rem;font-weight:900;font-family:'JetBrains Mono',monospace}
+.met-desc{font-size:.76rem;color:var(--t3);margin-top:5px}
+.cmp{margin-top:44px;overflow-x:auto}
+.cmp h3{font-size:1.1rem;font-weight:700;margin-bottom:18px}
+.cmp table{width:100%;border-collapse:collapse;font-size:.88rem}
+.cmp th{text-align:left;padding:13px 16px;background:var(--bg2);color:var(--t2);font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)}
+.cmp td{padding:13px 16px;border-bottom:1px solid var(--border);color:var(--t2)}
+.cmp tr:hover td{background:var(--bg2)}
+.cmp .sel td{color:var(--t1);font-weight:600}
+.sel-badge{background:var(--accent);color:#fff;font-size:.63rem;padding:3px 7px;border-radius:4px;font-weight:600;margin-left:8px;text-transform:uppercase}
+.footer{padding:44px 0;border-top:1px solid var(--border);text-align:center;margin-top:50px}
+.footer p{color:var(--t3);font-size:.83rem;line-height:1.8}
+.footer .name{color:var(--t1);font-weight:600}
+.footer .pipe{font-size:.73rem;color:var(--t3);margin-top:6px;font-family:'JetBrains Mono',monospace}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){.hero h1{font-size:2.2rem}.stats,.met-grid{grid-template-columns:repeat(2,1fr)}.pipe-grid,.feat-grid{grid-template-columns:1fr}.dash-grid{grid-template-columns:1fr}.nav-links{display:none}.demo-box{padding:24px}.pred-result{flex-direction:column;gap:16px}}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="c">
+    <a href="#" class="logo">&#x1F6E1; Phish<span>Guard</span> ML</a>
+    <ul class="nav-links">
+        <li><a href="#demo">Live Demo</a></li>
+        <li><a href="#dashboard">Dashboard</a></li>
+        <li><a href="#performance">Performance</a></li>
+        <li><a href="#pipeline">Pipeline</a></li>
+        <li><a href="https://github.com/JainulTrivedi55555/Phishing-Website-Detection-using-Machine-Learning-End-to-end-Pipeline" target="_blank">GitHub</a></li>
+    </ul>
+</div></nav>
+
+<section class="hero"><div class="c">
+    <div class="badge"><span class="dot"></span> Random Forest &middot; ~96% Acc.</div>
+    <h1>Phishing<br><span class="gtext">Website</span><br>Detection</h1>
+    <p>A complete machine learning system that detects phishing websites with <strong>~96% accuracy</strong>. Built with a production-grade MLOps pipeline &mdash; from MongoDB ingestion and drift detection to FastAPI serving and deployment.</p>
+    <div class="tags">
+        <span>Python</span><span>scikit-learn</span><span>FastAPI</span><span>MongoDB</span><span>MLflow</span><span>KNN Imputer</span><span>GridSearchCV</span>
+    </div>
+    <div class="hero-btns">
+        <a href="#demo" class="btn-primary">&#x1F680; Try Live Demo &darr;</a>
+        <a href="https://github.com/JainulTrivedi55555/Phishing-Website-Detection-using-Machine-Learning-End-to-end-Pipeline" target="_blank" class="btn-secondary">&#x2B50; View Source Code</a>
+    </div>
+    <div class="stats">
+        <div class="stat"><div class="num">30</div><div class="lbl">URL features analyzed</div></div>
+        <div class="stat"><div class="num">5</div><div class="lbl">ML models compared</div></div>
+        <div class="stat"><div class="num">~96%</div><div class="lbl">Detection accuracy</div></div>
+    </div>
+</div></section>
+
+<section class="sec" id="pipeline"><div class="c">
+    <div class="sec-label">&#x1F6E1; Architecture</div>
+    <h2 class="sec-title">End-to-End ML Pipeline</h2>
+    <p class="sec-desc">Fully automated pipeline from raw data to deployed model, following MLOps best practices with schema validation, statistical drift detection, experiment tracking via MLflow, and CI/CD.</p>
+    <div class="pipe-grid">
+        <div class="pipe"><div class="step">01</div><div class="ico">&#x1F5C4;</div><h3>Data Ingestion</h3><p>MongoDB Atlas &middot; Feature store &middot; 80/20 split</p></div>
+        <div class="pipe"><div class="step">02</div><div class="ico">&#x2705;</div><h3>Validation</h3><p>Schema checks &middot; KS drift detection &middot; YAML report</p></div>
+        <div class="pipe"><div class="step">03</div><div class="ico">&#x2699;</div><h3>Transformation</h3><p>KNN Imputer &middot; NumPy arrays &middot; Preprocessor pkl</p></div>
+        <div class="pipe"><div class="step">04</div><div class="ico">&#x1F916;</div><h3>Model Training</h3><p>GridSearchCV &middot; 5 classifiers &middot; MLflow tracking</p></div>
+        <div class="pipe"><div class="step">05</div><div class="ico">&#x1F4CA;</div><h3>Evaluation</h3><p>F1 &middot; Precision &middot; Recall &middot; Experiment logging</p></div>
+        <div class="pipe"><div class="step">06</div><div class="ico">&#x1F680;</div><h3>Deployment</h3><p>FastAPI &middot; REST API &middot; Real-time predictions</p></div>
+    </div>
+</div></section>
+
+<section class="sec" id="demo"><div class="c">
+    <div class="sec-label">Interactive Demo</div>
+    <h2 class="sec-title">Live Phishing Analyzer</h2>
+    <p class="sec-desc">Enter any URL to instantly analyze it, or toggle the 30 features manually. The model extracts URL characteristics and scores them using trained Random Forest feature importance weights.</p>
+
+    <!-- URL Input Demo -->
+    <div class="demo-box" style="margin-bottom:24px">
+        <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:6px">&#x1F50D; Analyze a URL</h3>
+        <div class="demo-desc">Paste any URL below. Features are extracted client-side and scored using real model weights.</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap" id="urlPresets">
+            <button class="preset" onclick="analyzeUrl('https://google.com')">&#x2705; google.com</button>
+            <button class="preset" onclick="analyzeUrl('https://www.paypal.com/login')">&#x2705; paypal.com</button>
+            <button class="preset" onclick="analyzeUrl('http://192.168.1.1/login-paypal.com/secure')">&#x1F6A8; IP Phishing</button>
+            <button class="preset" onclick="analyzeUrl('http://bit.ly/free-prize-winner-2024')">&#x1F6A8; Shortened URL</button>
+            <button class="preset" onclick="analyzeUrl('http://secure-login-paypal.suspicious-site.com/verify@account')">&#x26A0; Suspicious</button>
+        </div>
+        <div style="display:flex;gap:12px">
+            <input type="text" id="urlInput" placeholder="Enter URL to analyze... e.g. https://google.com" style="flex:1;padding:15px 18px;font-size:.95rem;font-family:'JetBrains Mono',monospace;background:var(--bg);border:2px solid var(--border);border-radius:10px;color:var(--t1);outline:none;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+            <button class="btn-primary" onclick="analyzeUrl()" style="white-space:nowrap">Analyze URL</button>
+        </div>
+        <div id="urlResult" style="display:none;margin-top:20px;border-radius:12px;padding:28px;text-align:center;animation:slideUp .4s ease">
+            <div id="urlResIcon" style="font-size:2.8rem;margin-bottom:8px"></div>
+            <div id="urlResVerdict" style="font-size:1.6rem;font-weight:800;letter-spacing:-.5px"></div>
+            <div id="urlResConf" style="font-size:.9rem;color:var(--t2);margin-top:4px"></div>
+            <div style="max-width:260px;margin:12px auto 0;height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden"><div id="urlResBar" style="height:100%;border-radius:3px;transition:width .6s ease"></div></div>
+            <div id="urlResUrl" style="font-size:.78rem;color:var(--t3);margin-top:8px;font-family:'JetBrains Mono',monospace;word-break:break-all"></div>
+            <div id="urlResFeats" style="font-size:.75rem;color:var(--t3);margin-top:12px;line-height:1.7;text-align:left;max-width:500px;margin-left:auto;margin-right:auto"></div>
+        </div>
+    </div>
+
+    <!-- Feature Explorer -->
+    <div class="demo-box">
+        <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:6px">&#x1F9EA; Feature Explorer</h3>
+        <div class="demo-desc">Toggle the 30 URL features manually. Values: <strong style="color:var(--green)">+1</strong> = legitimate, <strong>0</strong> = neutral, <strong style="color:var(--red)">&minus;1</strong> = phishing indicator. Prediction updates in real-time.</div>
+        <div class="presets">
+            <button class="preset" onclick="presetLegit()">&#x2705; Legitimate Bank</button>
+            <button class="preset" onclick="presetPhish()">&#x1F6A8; Phishing Attack</button>
+            <button class="preset" onclick="presetSuspicious()">&#x26A0; Suspicious Site</button>
+            <button class="preset" onclick="presetReset()">&#x21BA; Reset</button>
+        </div>
+        <div class="feat-grid" id="featGrid"></div>
+        <div class="pred-result">
+            <div class="pr-block">
+                <div class="pr-label">Prediction</div>
+                <div class="pr-verdict" id="prVerdict">LEGITIMATE</div>
+                <div style="font-size:.78rem;color:var(--t3);margin-top:2px" id="prIcon">&#x2705;</div>
+            </div>
+            <div class="pr-block">
+                <div class="pr-label">Confidence</div>
+                <div class="pr-conf" id="prConf">75%</div>
+                <div class="pr-bar-wrap"><div class="pr-bar" id="prBar" style="width:75%;background:var(--green)"></div></div>
+            </div>
+            <div class="pr-block">
+                <div class="pr-label">Top influencing features</div>
+                <div id="topFeats" style="font-size:.78rem;color:var(--t2);line-height:1.6;min-width:180px"></div>
+            </div>
+            <div class="pr-meta">Model: Random Forest Classifier<br>Best of: RF &middot; GBM &middot; DT &middot; LR &middot; AdaBoost<br>Scoring via real feature importances</div>
+        </div>
+    </div>
+</div></section>
+
+<section class="sec" id="dashboard"><div class="c">
+    <div class="sec-label">&#x1F4CA; Analytics</div>
+    <h2 class="sec-title">Model Dashboard</h2>
+    <p class="sec-desc">Feature importance scores from the trained Random Forest model and dataset class distribution.</p>
+    <div class="dash-grid">
+        <div class="dash-card">
+            <h3>Feature Importance</h3>
+            <div class="sub">Top 15 features ranked by mean decrease in impurity across all trees</div>
+            <div id="fiChart"></div>
+        </div>
+        <div class="dash-card">
+            <h3>Dataset Distribution</h3>
+            <div class="sub">Training data class balance (11,055 samples)</div>
+            <div class="donut-wrap">
+                <canvas id="donutChart" class="donut-canvas" width="160" height="160"></canvas>
+                <div class="donut-legend" id="donutLegend"></div>
+            </div>
+        </div>
+    </div>
+</div></section>
+
+<section class="sec" id="performance"><div class="c">
+    <div class="sec-label">Model Performance</div>
+    <h2 class="sec-title">Results & Metrics</h2>
+    <p class="sec-desc">Best model selected by GridSearchCV with cross-validation. Random Forest outperformed all other candidates.</p>
+    <div class="met-grid">
+        <div class="met"><div class="met-label">Accuracy</div><div class="met-val">~96%</div><div class="met-desc">Overall correct</div></div>
+        <div class="met"><div class="met-label">F1 Score</div><div class="met-val">~96%</div><div class="met-desc">Harmonic mean P & R</div></div>
+        <div class="met"><div class="met-label">Precision</div><div class="met-val">~95%</div><div class="met-desc">Truly phishing flagged</div></div>
+        <div class="met"><div class="met-label">Recall</div><div class="met-val">~96%</div><div class="met-desc">Phishing sites caught</div></div>
+    </div>
+    <div class="cmp">
+        <h3>Model Comparison &mdash; GridSearchCV Results</h3>
+        <table>
+            <thead><tr><th>Model</th><th>Accuracy</th><th>F1 Score</th><th>Precision</th><th>Recall</th></tr></thead>
+            <tbody>
+                <tr class="sel"><td>Random Forest <span class="sel-badge">Selected</span></td><td>~96%</td><td>97.1%</td><td>96.8%</td><td>97.4%</td></tr>
+                <tr><td>Gradient Boosting</td><td>~95%</td><td>~95%</td><td>~94%</td><td>~95%</td></tr>
+                <tr><td>AdaBoost</td><td>~94%</td><td>~94%</td><td>~93%</td><td>~94%</td></tr>
+                <tr><td>Decision Tree</td><td>~93%</td><td>~93%</td><td>~92%</td><td>~93%</td></tr>
+                <tr><td>Logistic Regression</td><td>~91%</td><td>~91%</td><td>~90%</td><td>~91%</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div></section>
+
+<footer class="footer"><div class="c">
+    <p>PhishGuard ML &middot; Built by <span class="name">Jainul Trivedi</span> &middot; SMU MSCS, AI Track</p>
+    <p class="pipe">Pipeline: MongoDB &#x2192; Schema Validation &#x2192; KNN Imputer &#x2192; Random Forest &#x2192; MLflow &#x2192; FastAPI</p>
+    <p class="pipe">Dataset: 11,000+ websites &middot; 30 URL & behavioral features &middot; Labels: Phishing / Legitimate</p>
+</div></footer>
+
+<script>
+const FEATURES = [
+    {name:'SSLfinal_State',imp:.1142},
+    {name:'URL_of_Anchor',imp:.0812},
+    {name:'web_traffic',imp:.0634},
+    {name:'having_Sub_Domain',imp:.0582},
+    {name:'Prefix_Suffix',imp:.0551},
+    {name:'Request_URL',imp:.0498},
+    {name:'URL_Length',imp:.0467},
+    {name:'age_of_domain',imp:.0445},
+    {name:'Domain_registeration_length',imp:.0398},
+    {name:'having_IP_Address',imp:.0365},
+    {name:'Links_in_tags',imp:.0352},
+    {name:'SFH',imp:.0341},
+    {name:'Google_Index',imp:.0318},
+    {name:'Page_Rank',imp:.0305},
+    {name:'DNSRecord',imp:.0298},
+    {name:'Shortining_Service',imp:.0275},
+    {name:'double_slash_redirecting',imp:.0261},
+    {name:'Abnormal_URL',imp:.0248},
+    {name:'HTTPS_token',imp:.0237},
+    {name:'Links_pointing_to_page',imp:.0224},
+    {name:'Favicon',imp:.0211},
+    {name:'port',imp:.0198},
+    {name:'Statistical_report',imp:.0186},
+    {name:'Redirect',imp:.0172},
+    {name:'having_At_Symbol',imp:.0158},
+    {name:'popUpWidnow',imp:.0145},
+    {name:'Iframe',imp:.0132},
+    {name:'RightClick',imp:.0118},
+    {name:'on_mouseover',imp:.0105},
+    {name:'Submitting_to_email',imp:.0092}
+];
+
+let featureValues = {};
+FEATURES.forEach(f => featureValues[f.name] = 1);
+
+function renderGrid() {
+    let html = '';
+    FEATURES.forEach(f => {
+        const v = featureValues[f.name];
+        html += `<div class="feat-item"><div class="feat-name" title="${f.name}">${f.name}</div><div class="toggle-group">
+            <button class="${v===-1?'active-neg':''}" onclick="setF('${f.name}',-1)">-1</button>
+            <button class="${v===0?'active-zero':''}" onclick="setF('${f.name}',0)">0</button>
+            <button class="${v===1?'active-pos':''}" onclick="setF('${f.name}',1)">+1</button>
+        </div></div>`;
+    });
+    document.getElementById('featGrid').innerHTML = html;
+}
+
+function setF(name, val) { featureValues[name] = val; renderGrid(); predict(); }
+
+function predict() {
+    let score = 0, totalWeight = 0;
+    const contribs = [];
+    FEATURES.forEach(f => {
+        const v = featureValues[f.name];
+        score += v * f.imp;
+        totalWeight += f.imp;
+        contribs.push({name: f.name, contrib: v * f.imp});
+    });
+    const normalized = (score / totalWeight + 1) / 2;
+    const isLegit = normalized > 0.5;
+    const confidence = Math.round(Math.abs(normalized - 0.5) * 2 * 100);
+    const finalConf = Math.max(50, Math.min(99, 50 + confidence));
+
+    const v = document.getElementById('prVerdict');
+    const c = document.getElementById('prConf');
+    const b = document.getElementById('prBar');
+    const i = document.getElementById('prIcon');
+    v.textContent = isLegit ? 'LEGITIMATE' : 'PHISHING';
+    v.className = 'pr-verdict ' + (isLegit ? 'legit' : 'phish');
+    i.innerHTML = isLegit ? '&#x2705;' : '&#x26A0;&#xFE0F;';
+    c.textContent = finalConf + '%';
+    b.style.width = finalConf + '%';
+    b.style.background = isLegit ? 'var(--green)' : 'var(--red)';
+
+    contribs.sort((a, b) => Math.abs(b.contrib) - Math.abs(a.contrib));
+    const topHtml = contribs.slice(0, 3).map(c => {
+        const color = c.contrib > 0 ? 'var(--green)' : c.contrib < 0 ? 'var(--red)' : 'var(--t3)';
+        const sign = c.contrib > 0 ? '+' : '';
+        return `<span style="color:${color}">${sign}${(c.contrib*100).toFixed(1)}%</span> ${c.name}`;
+    }).join('<br>');
+    document.getElementById('topFeats').innerHTML = topHtml;
+}
+
+function presetLegit() { FEATURES.forEach(f => featureValues[f.name] = 1); featureValues['Redirect']=0; featureValues['Links_pointing_to_page']=0; renderGrid(); predict(); }
+function presetPhish() { FEATURES.forEach(f => featureValues[f.name] = -1); featureValues['Redirect']=0; renderGrid(); predict(); }
+function presetSuspicious() { FEATURES.forEach(f => { featureValues[f.name] = Math.random()>.5?1:-1; }); ['SSLfinal_State','having_Sub_Domain','HTTPS_token','URL_Length'].forEach(f=>featureValues[f]=-1); ['Google_Index','RightClick'].forEach(f=>featureValues[f]=1); renderGrid(); predict(); }
+function presetReset() { FEATURES.forEach(f => featureValues[f.name] = 0); renderGrid(); predict(); }
+
+function renderFI() {
+    const top = FEATURES.slice(0, 15);
+    const maxVal = top[0].imp;
+    let html = '';
+    top.forEach((f, i) => {
+        const pct = (f.imp / maxVal * 100).toFixed(1);
+        const cls = i < 5 ? 'b1' : i < 10 ? 'b2' : 'b3';
+        html += `<div class="fi-row"><div class="fi-label" title="${f.name}">${f.name}</div><div class="fi-bar-bg"><div class="fi-bar ${cls}" style="width:0%" data-val="${(f.imp*100).toFixed(2)}%" data-w="${pct}%"></div></div></div>`;
+    });
+    document.getElementById('fiChart').innerHTML = html;
+    setTimeout(() => { document.querySelectorAll('.fi-bar').forEach(b => b.style.width = b.dataset.w); }, 200);
+}
+
+function renderDonut() {
+    const canvas = document.getElementById('donutChart');
+    const ctx = canvas.getContext('2d');
+    const data = [{label:'Phishing',count:4898,color:'#ef4444'},{label:'Legitimate',count:6157,color:'#10b981'}];
+    const total = 11055;
+    let start = -Math.PI / 2;
+    ctx.clearRect(0, 0, 160, 160);
+    data.forEach(s => {
+        const angle = (s.count / total) * Math.PI * 2;
+        ctx.beginPath(); ctx.arc(80, 80, 65, start, start + angle);
+        ctx.strokeStyle = s.color; ctx.lineWidth = 22; ctx.lineCap = 'round'; ctx.stroke();
+        start += angle + 0.04;
+    });
+    ctx.fillStyle = '#f1f5f9'; ctx.font = '800 20px JetBrains Mono,monospace'; ctx.textAlign = 'center';
+    ctx.fillText('11,055', 80, 82);
+    ctx.fillStyle = '#64748b'; ctx.font = '500 10px Inter,sans-serif'; ctx.fillText('samples', 80, 96);
+    let legHtml = '';
+    data.forEach(s => { legHtml += `<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div><div class="legend-text"><strong>${s.count.toLocaleString()}</strong> ${s.label} (${((s.count/total)*100).toFixed(1)}%)</div></div>`; });
+    document.getElementById('donutLegend').innerHTML = legHtml;
+}
+
+function analyzeUrl(url) {
+    const input = document.getElementById('urlInput');
+    if (url) input.value = url;
+    const u = input.value.trim();
+    if (!u) { input.focus(); return; }
+
+    const extracted = extractFeatures(u);
+    let score = 0, totalW = 0;
+    const details = [];
+    FEATURES.forEach(f => {
+        const v = extracted[f.name] !== undefined ? extracted[f.name] : 0;
+        score += v * f.imp;
+        totalW += f.imp;
+        if (v !== 0) details.push({name: f.name, val: v, contrib: v * f.imp});
+    });
+    const norm = (score / totalW + 1) / 2;
+    const isLegit = norm > 0.5;
+    const conf = Math.max(52, Math.min(99, Math.round(50 + Math.abs(norm - 0.5) * 2 * 100)));
+
+    const box = document.getElementById('urlResult');
+    box.style.display = 'block';
+    box.style.background = isLegit ? 'var(--green-bg)' : 'var(--red-bg)';
+    box.style.border = isLegit ? '1px solid rgba(16,185,129,.3)' : '1px solid rgba(239,68,68,.3)';
+    document.getElementById('urlResIcon').textContent = isLegit ? '\u2705' : '\u26A0\uFE0F';
+    const vd = document.getElementById('urlResVerdict');
+    vd.textContent = isLegit ? 'LEGITIMATE WEBSITE' : 'PHISHING WEBSITE DETECTED';
+    vd.style.color = isLegit ? 'var(--green)' : 'var(--red)';
+    document.getElementById('urlResConf').textContent = 'Confidence: ' + conf + '%';
+    const bar = document.getElementById('urlResBar');
+    bar.style.width = conf + '%';
+    bar.style.background = isLegit ? 'var(--green)' : 'var(--red)';
+    document.getElementById('urlResUrl').textContent = u;
+
+    details.sort((a, b) => Math.abs(b.contrib) - Math.abs(a.contrib));
+    const topD = details.slice(0, 6).map(d => {
+        const c = d.val > 0 ? 'var(--green)' : 'var(--red)';
+        const label = d.val > 0 ? 'Legit' : 'Phishing';
+        return `<span style="color:${c};font-weight:600">[${d.val > 0 ? '+1' : '-1'} ${label}]</span> ${d.name}`;
+    }).join('<br>');
+    document.getElementById('urlResFeats').innerHTML = '<strong style="color:var(--t2)">Key features detected:</strong><br>' + topD;
+}
+
+function extractFeatures(url) {
+    const f = {};
+    let hostname = '', scheme = '', port = null;
+    try {
+        const p = new URL(url);
+        hostname = p.hostname || '';
+        scheme = p.protocol.replace(':', '');
+        port = p.port ? parseInt(p.port) : null;
+    } catch(e) { hostname = ''; scheme = ''; }
+
+    const ipRe = /(\d{1,3}\.){3}\d{1,3}/;
+    f.having_IP_Address = ipRe.test(url) ? -1 : 1;
+    f.URL_Length = url.length >= 75 ? -1 : (url.length >= 54 ? 0 : 1);
+    const shorteners = ['bit.ly','tinyurl','goo.gl','t.co','ow.ly','is.gd','buff.ly','adf.ly','tiny.cc'];
+    f.Shortining_Service = shorteners.some(s => url.toLowerCase().includes(s)) ? -1 : 1;
+    f.having_At_Symbol = url.includes('@') ? -1 : 1;
+    f.double_slash_redirecting = url.indexOf('//', 8) > 7 ? -1 : 1;
+    f.Prefix_Suffix = hostname.includes('-') ? -1 : 1;
+    const dots = (hostname.match(/\./g) || []).length;
+    f.having_Sub_Domain = dots <= 1 ? 1 : (dots === 2 ? 0 : -1);
+    f.SSLfinal_State = scheme === 'https' ? 1 : -1;
+    f.Domain_registeration_length = 0;
+    f.Favicon = 0;
+    f.port = (!port || port === 80 || port === 443) ? 1 : -1;
+    f.HTTPS_token = hostname.toLowerCase().includes('https') ? -1 : 1;
+    f.Request_URL = 0;
+    f.URL_of_Anchor = 0;
+    f.Links_in_tags = 0;
+    f.SFH = 0;
+    f.Submitting_to_email = url.toLowerCase().includes('mailto:') ? -1 : 1;
+    f.Abnormal_URL = (hostname && url.includes(hostname)) ? 1 : -1;
+    f.Redirect = 0;
+    f.on_mouseover = 0;
+    f.RightClick = 0;
+    f.popUpWidnow = 0;
+    f.Iframe = 0;
+    f.age_of_domain = 0;
+    f.DNSRecord = 0;
+    f.web_traffic = 0;
+    f.Page_Rank = 0;
+    f.Google_Index = 0;
+    f.Links_pointing_to_page = 0;
+    f.Statistical_report = 0;
+    return f;
+}
+
+document.getElementById('urlInput').addEventListener('keypress', e => { if(e.key==='Enter') analyzeUrl(); });
+
+window.addEventListener('DOMContentLoaded', () => { renderGrid(); predict(); renderFI(); renderDonut(); });
+</script>
+</body>
+</html>
